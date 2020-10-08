@@ -18,14 +18,15 @@ namespace JobSystem
 	{
 		// while (!jobQueue.empty()) {
 		while (!stop) {
+			queueLock.lock();
 			if (!jobQueue.empty()) {
-				queueLock.lock();
 				const auto job = jobQueue.front();
 				jobQueue.pop();
 				queueLock.unlock();
 				job();
 			}
 			else {
+				queueLock.unlock();
 				std::this_thread::sleep_for(std::chrono::seconds(2));
 			}
 		}

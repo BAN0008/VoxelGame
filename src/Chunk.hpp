@@ -10,7 +10,7 @@ struct Vertex
 {
 	uint8_t pX, pY, pZ; // Position
 	int8_t  nX, nY, nZ; // Normal
-	int8_t  tX, tY;     // Texture coordinate
+	int8_t  tX, tY, tZ;     // Texture coordinate
 
 	Vertex operator+(const glm::vec3 &pos) const
 	{
@@ -19,63 +19,63 @@ struct Vertex
 			(uint8_t)(this->pY + pos.y),
 			(uint8_t)(this->pZ + pos.z),
 			this->nX, this->nY, this->nZ,
-			this->tX, this->tY
+			this->tX, this->tY, this->tZ
 		};
 	}
 };
 
 const std::array<Vertex, 6> backFace = {
-	Vertex{1, 1, 0,  0,  0, -1, 16, 16},
-	Vertex{1, 0, 0,  0,  0, -1, 16, 32},
-	Vertex{0, 0, 0,  0,  0, -1, 0,  32},
-	Vertex{0, 0, 0,  0,  0, -1, 0,  32},
-	Vertex{0, 1, 0,  0,  0, -1, 0,  16},
-	Vertex{1, 1, 0,  0,  0, -1, 16, 16}
+	Vertex{1, 1, 0,  0,  0, -1, 16, 0 , 1},
+	Vertex{1, 0, 0,  0,  0, -1, 16, 16, 1},
+	Vertex{0, 0, 0,  0,  0, -1, 0,  16, 1},
+	Vertex{0, 0, 0,  0,  0, -1, 0,  16, 1},
+	Vertex{0, 1, 0,  0,  0, -1, 0,  0,  1},
+	Vertex{1, 1, 0,  0,  0, -1, 16, 0,  1}
 };
 
 const std::array<Vertex, 6> frontFace = {
-	Vertex{0, 0, 1,  0,  0,  1, 0,  32},
-	Vertex{1, 0, 1,  0,  0,  1, 16, 32},
-	Vertex{1, 1, 1,  0,  0,  1, 16, 16},
-	Vertex{1, 1, 1,  0,  0,  1, 16, 16},
-	Vertex{0, 1, 1,  0,  0,  1, 0,  16},
-	Vertex{0, 0, 1,  0,  0,  1, 0,  32}
+	Vertex{0, 0, 1,  0,  0,  1, 0,  16, 1},
+	Vertex{1, 0, 1,  0,  0,  1, 16, 16, 1},
+	Vertex{1, 1, 1,  0,  0,  1, 16, 0,  1},
+	Vertex{1, 1, 1,  0,  0,  1, 16, 0,  1},
+	Vertex{0, 1, 1,  0,  0,  1, 0,  0,  1},
+	Vertex{0, 0, 1,  0,  0,  1, 0,  16, 1}
 };
 
 const std::array<Vertex, 6> leftFace = {
-	Vertex{0, 0, 0, -1,  0,  0, 0,  32},
-	Vertex{0, 0, 1, -1,  0,  0, 16, 32},
-	Vertex{0, 1, 1, -1,  0,  0, 16, 16},
-	Vertex{0, 1, 1, -1,  0,  0, 16, 16},
-	Vertex{0, 1, 0, -1,  0,  0, 0,  16},
-	Vertex{0, 0, 0, -1,  0,  0, 0,  32}
+	Vertex{0, 0, 0, -1,  0,  0, 0,  16, 1},
+	Vertex{0, 0, 1, -1,  0,  0, 16, 16, 1},
+	Vertex{0, 1, 1, -1,  0,  0, 16, 0,  1},
+	Vertex{0, 1, 1, -1,  0,  0, 16, 0,  1},
+	Vertex{0, 1, 0, -1,  0,  0, 0,  0,  1},
+	Vertex{0, 0, 0, -1,  0,  0, 0,  16, 1}
 };
 
 const std::array<Vertex, 6> rightFace = {
-	Vertex{1, 1, 1,  1,  0,  0, 16, 16},
-	Vertex{1, 0, 1,  1,  0,  0, 16, 32},
-	Vertex{1, 0, 0,  1,  0,  0, 0,  32},
-	Vertex{1, 0, 0,  1,  0,  0, 0,  32},
-	Vertex{1, 1, 0,  1,  0,  0, 0,  16},
-	Vertex{1, 1, 1,  1,  0,  0, 16, 16}
+	Vertex{1, 1, 1,  1,  0,  0, 16, 0,  1},
+	Vertex{1, 0, 1,  1,  0,  0, 16, 16, 1},
+	Vertex{1, 0, 0,  1,  0,  0, 0,  16, 1},
+	Vertex{1, 0, 0,  1,  0,  0, 0,  16, 1},
+	Vertex{1, 1, 0,  1,  0,  0, 0,  0,  1},
+	Vertex{1, 1, 1,  1,  0,  0, 16, 0,  1}
 };
 
 const std::array<Vertex, 6> bottomFace = {
-	Vertex{1, 0, 1,  0, -1,  0, 16, 32},
-	Vertex{0, 0, 1,  0, -1,  0, 0,  32},
-	Vertex{0, 0, 0,  0, -1,  0, 0,  48},
-	Vertex{0, 0, 0,  0, -1,  0, 0,  48},
-	Vertex{1, 0, 0,  0, -1,  0, 16, 48},
-	Vertex{1, 0, 1,  0, -1,  0, 16, 32}
+	Vertex{1, 0, 1,  0, -1,  0, 16, 0,  2},
+	Vertex{0, 0, 1,  0, -1,  0, 0,  0,  2},
+	Vertex{0, 0, 0,  0, -1,  0, 0,  16, 2},
+	Vertex{0, 0, 0,  0, -1,  0, 0,  16, 2},
+	Vertex{1, 0, 0,  0, -1,  0, 16, 16, 2},
+	Vertex{1, 0, 1,  0, -1,  0, 16, 0,  2}
 };
 
 const std::array<Vertex, 6> topFace = {
-	Vertex{0, 1, 0,  0,  1,  0, 0,  0},
-	Vertex{0, 1, 1,  0,  1,  0, 0,  16},
-	Vertex{1, 1, 1,  0,  1,  0, 16, 16},
-	Vertex{1, 1, 1,  0,  1,  0, 16, 16},
-	Vertex{1, 1, 0,  0,  1,  0, 16, 0},
-	Vertex{0, 1, 0,  0,  1,  0, 0,  0}
+	Vertex{0, 1, 0,  0,  1,  0, 0,  0,  0},
+	Vertex{0, 1, 1,  0,  1,  0, 0,  16, 0},
+	Vertex{1, 1, 1,  0,  1,  0, 16, 16, 0},
+	Vertex{1, 1, 1,  0,  1,  0, 16, 16, 0},
+	Vertex{1, 1, 0,  0,  1,  0, 16, 0,  0},
+	Vertex{0, 1, 0,  0,  1,  0, 0,  0,  0}
 };
 
 template<int Width, int Height, int Depth, typename VoxelType, VoxelType NullVoxel>
@@ -84,7 +84,7 @@ class Chunk
 public:
 	Chunk()
 	{
-		vertexBuffer = new VertexBuffer({VertexType::Uint8_3, VertexType::Int8_3, VertexType::Int8_2});
+		vertexBuffer = new VertexBuffer({VertexType::Uint8_3, VertexType::Int8_3, VertexType::Int8_3});
 		UpdateVertices();
 	}
 
@@ -162,7 +162,15 @@ public:
 		voxels[index] = voxel;
 	}
 
+	bool TestPos(int x, int y, int z)
+	{
+		if (x < 0 || y < 0 || z < 0 || x >= Width || y >= Height || z >= Depth) return false;
+		const uint64_t index = (y * Width * Depth) + (z * Width) + x;
+		return (voxels[index] != NullVoxel);
+	}
+
 	std::mutex lock;
+	bool       modified = false; // Set to true to prevent chunks from being unloaded
 private:
 	static_assert(Width  <= 255, "Width cannot exceed 255");
 	static_assert(Height <= 255, "Height cannot exceed 255");
@@ -174,11 +182,4 @@ private:
 	VoxelType voxels[Width * Height * Depth] = {NullVoxel};
 
 	bool updated = false;
-
-	bool TestPos(int x, int y, int z)
-	{
-		if (x < 0 || y < 0 || z < 0 || x >= Width || y >= Height || z >= Depth) return false;
-		const uint64_t index = (y * Width * Depth) + (z * Width) + x;
-		return (voxels[index] != NullVoxel);
-	}
 };

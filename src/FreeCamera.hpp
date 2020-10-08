@@ -12,10 +12,10 @@ public:
 	glm::mat4 GetMatrix();
 
 	glm::vec3 position;
-private:
 	glm::vec3 front;
 	glm::vec3 right;
 	glm::vec3 up;
+private:
 
 	float pitch = 0.0f;
 	float yaw   = 0.0f;

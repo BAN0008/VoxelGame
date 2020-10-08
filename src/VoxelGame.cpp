@@ -5,34 +5,36 @@
 #include "Shader.hpp"
 #include "FreeCamera.hpp"
 #include "Chunk.hpp"
-#include "Texture.hpp"
+#include "TextureArray.hpp"
+#include "VertexBuffer.hpp"
 #include <cstdint>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/noise.hpp>
 #include <functional>
 #include <map>
+#include <array>
 #include <memory>
 
 const char *vertexCode =
 R"(#version 330 core
 layout (location = 0) in vec3 aPos;
 layout (location = 1) in vec3 aNorm;
-layout (location = 2) in vec2 aTexCoord;
+layout (location = 2) in vec3 aTexCoord;
 
 uniform mat4 uCamera;
 uniform mat4 uModel;
 
-uniform sampler2D uTexture;
+uniform sampler2DArray uTexture;
 
 out vec3 fragPos;
 out vec3 norm;
-out vec2 texCoord;
+out vec3 texCoord;
 
 void main()
 {
 	fragPos     = vec3(uModel * vec4(aPos, 1.0));
 	norm        = aNorm;
-	texCoord    = (vec2(1.0) / textureSize(uTexture, 0)) * aTexCoord;
+	texCoord    = vec3(vec2(1.0) / textureSize(uTexture, 0).xy, 1.0) * aTexCoord;
 	gl_Position = uCamera * uModel * vec4(aPos, 1.0);
 })";
 
@@ -41,12 +43,12 @@ R"(#version 330 core
 
 in      vec3 fragPos;
 in      vec3 norm;
-in      vec2 texCoord;
+in      vec3 texCoord;
 
 out     vec4 outColor;
 
 uniform vec3 uCameraPos;
-uniform sampler2D uTexture;
+uniform sampler2DArray uTexture;
 
 const vec3  lightPos = vec3(-200, 200.0, -200.0);
 const float ambient  = 0.1;
@@ -70,28 +72,50 @@ void main()
 	outColor = vec4(ambient + diffuse + specular, 1.0);
 })";
 
-/*template<uint8_t Width, uint8_t Height, uint8_t Depth, typename VoxelType, VoxelType NullVoxel>
-// void GenerateChunk(Chunk<Width, Height, Depth, VoxelType, NullVoxel> *chunk, int x, int y, int z)
-void GenerateChunk(std::shared_ptr<Chunk<Width, Height, Depth, VoxelType, NullVoxel>> chunk, int x, int y, int z)
+const char *cursorVertexCode =
+R"(#version 330 core
+layout (location = 0) in vec2 aPos;
+layout (location = 1) in vec3 aTexCoord;
+
+uniform mat4 uTransform;
+
+uniform sampler2DArray uTexture;
+
+out vec3 texCoord;
+
+void main()
 {
-	chunk->lock.lock();
-	for (uint8_t iZ = 0; iZ < Depth; iZ++) {
-		for (uint8_t iX = 0; iX < Width; iX++) {
-			chunk->SetVoxel(iX, 0, iZ, 1);
-			const int aX = iX + (x * Width);
-			const int aZ = iZ + (z * Depth);
-			// float noise = (Height / 1.5f) * glm::simplex(glm::vec3(((float)aX / (float)Width) - 0.5f, ((float)aZ / (float)Depth) - 0.5f, 0.5f));
-			// float noise = (Height / 1.0f) * glm::simplex(glm::vec3(((float)aX / (float)Width) - 0.5f, ((float)aZ / (float)Depth) - 0.25f, 0.75f));
-			float noise = (12.0f) * glm::simplex(glm::vec2((float)aX / (float)(64 * 2), (float)aZ / (float)(64 * 2)));
-			noise += 12.0f;
-			for (uint8_t iY = 0; iY <= noise + 2; iY++) {
-				chunk->SetVoxel(iX, iY, iZ, 1);
-			}
-		}
-	}
-	chunk->UpdateVertices();
-	chunk->lock.unlock();
-}*/
+	texCoord    = vec3(vec2(1.0) / textureSize(uTexture, 0).xy, 1.0) * aTexCoord;
+	gl_Position = uTransform * vec4(aPos, 0.0, 1.0);
+})";
+
+const char *cursorFragmentCode =
+R"(#version 330 core
+
+in      vec3 texCoord;
+out     vec4 outColor;
+
+uniform sampler2DArray uTexture;
+
+void main()
+{
+	outColor = texture(uTexture, texCoord);
+})";
+
+struct CursorVertex
+{
+	int8_t  pX, pZ;
+	uint8_t tX, tY, tZ;
+};
+
+const std::array<CursorVertex, 6> cursorVertices = {
+	CursorVertex{ 16,  16, 16, 16, 3},
+	CursorVertex{ 16, -16, 16, 0,  3},
+	CursorVertex{-16, -16, 0,  0,  3},
+	CursorVertex{-16, -16, 0,  0,  3},
+	CursorVertex{-16,  16, 0,  16, 3},
+	CursorVertex{ 16,  16, 16, 16, 3}
+};
 
 template<uint8_t Width, uint8_t Height, uint8_t Depth, typename VoxelType, VoxelType NullVoxel>
 void GenerateChunk(std::shared_ptr<Chunk<Width, Height, Depth, VoxelType, NullVoxel>> chunk, int x, int y, int z)
@@ -137,7 +161,8 @@ int main(int argc, char **argv)
 	Renderer::SetClearColor((1.0f / 255.0f) * 135.0f, (1.0f / 255.0f) * 206.0f, (1.0f / 255.0f) * 235.0f, (1.0f / 255.0f) * 255.0f);
 
 	Shader *shader = new Shader(vertexCode, fragmentCode, "Test Shader");
-	shader->Bind();
+
+	Shader *cursorShader = new Shader(cursorVertexCode, cursorFragmentCode, "Cursor Shader");
 	FreeCamera *camera = new FreeCamera();
 
 	glm::mat4 projection = glm::perspectiveFov(45.0f, 1280.0f, 720.0f, 0.1f, 1000.0f);
@@ -147,12 +172,18 @@ int main(int argc, char **argv)
 	const int chunkHeight = 64;
 	const int chunkDepth  = 64;
 
-	Texture *texture_atlas = new Texture("../res/texture_atlas.png");
+	TextureArray *texture_atlas = new TextureArray("../res/texture_atlas.png", 4);
 	texture_atlas->Bind(0);
 	shader->SetUniformInt("uTexture", 0);
+	cursorShader->SetUniformInt("uTexture", 0);
 
-	const float loadDistance   = 256.0f;
-	const float renderDistance = 160.0f;
+	VertexBuffer *cursorVertexBuffer = new VertexBuffer({VertexType::Int8_2, VertexType::Uint8_3});
+	cursorVertexBuffer->UpdateVertices(cursorVertices.data(), cursorVertices.size());
+
+	// const float loadDistance   = 256.0f;
+	// const float renderDistance = 160.0f;
+	const float loadDistance   = 512.0f;
+	const float renderDistance = 384.0f;
 	std::map<uint64_t, std::shared_ptr<Chunk<chunkWidth, chunkHeight, chunkDepth, uint8_t, 0>>> chunks;
 
 	JobSystem::StartThreads();
@@ -169,6 +200,42 @@ int main(int argc, char **argv)
 				case SDL_MOUSEMOTION:
 					if (isCaptured) camera->ProcessMouseInput(event.motion.xrel, event.motion.yrel);
 					break;
+				case SDL_MOUSEBUTTONDOWN:
+					if (isCaptured && event.button.button == SDL_BUTTON_LEFT) {
+						glm::vec3 direction = camera->front;
+						for (float i = 0.0f; i < 256.0f; i += 0.01f) {
+							glm::vec3 pos = camera->position + (direction * i);
+							pos.x = floor(pos.x);
+							pos.y = floor(pos.y);
+							pos.z = floor(pos.z);
+
+							int chunkX = floor((double)pos.x / (double)chunkWidth);
+							int chunkZ = floor((double)pos.z / (double)chunkDepth);
+
+							int localX = (int)pos.x % chunkWidth;
+							int localZ = (int)pos.z % chunkDepth;
+							if (localX < 0) localX += chunkWidth;
+							if (localZ < 0) localZ += chunkDepth;
+
+							uint64_t chunkIndex;
+							*(reinterpret_cast<int*>(&chunkIndex) + 0) = chunkX;
+							*(reinterpret_cast<int*>(&chunkIndex) + 1) = chunkZ;
+
+							if (chunks.count(chunkIndex) > 0) {
+								auto chunk = chunks[chunkIndex];
+								chunk->lock.lock();
+								if (chunk->TestPos(localX, pos.y, localZ)) {
+									chunk->SetVoxel(localX, pos.y, localZ, 0);
+									chunk->modified = true;
+									chunk->UpdateVertices();
+									chunk->lock.unlock();
+									break;
+								}
+								chunk->lock.unlock();
+							}
+						}
+					}
+					break;
 				case SDL_KEYDOWN:
 					if (event.key.keysym.scancode == SDL_SCANCODE_ESCAPE && !event.key.repeat) {
 						isCaptured = isCaptured == SDL_TRUE ? SDL_FALSE : SDL_TRUE;
@@ -181,8 +248,8 @@ int main(int argc, char **argv)
 		}
 
 		glm::vec3 movement = {0.0f, 0.0f, 0.0f};
-		float speed = 0.5f;
-		// float speed = 3.0f;
+		// float speed = 0.5f;
+		float speed = 3.0f;
 		if (keyState[SDL_SCANCODE_SPACE])  movement.y += speed;
 		if (keyState[SDL_SCANCODE_LSHIFT]) movement.y -= speed;
 		if (keyState[SDL_SCANCODE_W])      movement.z += speed;
@@ -191,19 +258,27 @@ int main(int argc, char **argv)
 		if (keyState[SDL_SCANCODE_A])      movement.x -= speed;
 		camera->Move(movement);
 
+		// Unload chunks
 		for (auto it = chunks.cbegin(); it != chunks.cend();) {
 			int x = *(reinterpret_cast<const int*>(&it->first) + 0);
 			int z = *(reinterpret_cast<const int*>(&it->first) + 1);
 			if (glm::length(glm::vec2(x * chunkWidth, z * chunkDepth) - glm::vec2(camera->position.x, camera->position.z)) > loadDistance) {
-				if (it->second.unique() && it->second->lock.try_lock()) { // TODO: What happens if a thread is waiting for the chunk
-					it->second->lock.unlock();
-					chunks.erase(it++);
+				if (it->second.use_count() == 1 && it->second->lock.try_lock()) {
+					if (it->second->modified) {
+						it->second->lock.unlock();
+						it++;
+					}
+					else {
+						it->second->lock.unlock();
+						chunks.erase(it++);
+					}
 				}
 				else it++;
 			}
 			else it++;
 		}
 
+		// Load chunks
 		{
 			int z1 = round((camera->position.z - loadDistance) / chunkDepth);
 			int z2 = round((camera->position.z + loadDistance) / chunkDepth);
@@ -227,11 +302,14 @@ int main(int argc, char **argv)
 
 		Renderer::ClearBuffer();
 
+		shader->Bind();
+
 		shader->SetUniformVec3("uCameraPos", camera->position);
 		// shader->SetUniformMat4("uCamera", projection * camera->GetMatrix() * glm::scale(glm::mat4(1.0f), glm::vec3(0.25f, 0.25f, 0.25f)));
 		// shader->SetUniformMat4("uCamera", projection * camera->GetMatrix() * glm::scale(glm::mat4(1.0f), glm::vec3(0.5f, 0.5f, 0.5f)));
 		shader->SetUniformMat4("uCamera", projection * camera->GetMatrix());
 
+		// Render chunks
 		{
 			int z1 = round((camera->position.z - renderDistance) / chunkDepth);
 			int z2 = round((camera->position.z + renderDistance) / chunkDepth);
@@ -254,14 +332,20 @@ int main(int argc, char **argv)
 			}
 		}
 
+		cursorShader->Bind();
+		cursorShader->SetUniformMat4("uTransform", glm::ortho(0.0f, 1280.0f, 720.0f, 0.0f) * glm::translate(glm::mat4(1.0f), glm::vec3(1280.0f / 2.0f, 720.0f / 2.0f, 0.0f)));
+		cursorVertexBuffer->Render();
+
 		Renderer::FlushBuffer();
 	}
 
 	JobSystem::StopThreads();
 	chunks.clear();
 
+	delete cursorVertexBuffer;
 	delete texture_atlas;
 	delete camera;
+	delete cursorShader;
 	delete shader;
 
 	Renderer::Cleanup();

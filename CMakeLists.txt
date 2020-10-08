@@ -4,11 +4,13 @@ project(VoxelGame)
 set(sources
 	"src/VoxelGame.cpp"
 	"src/Log.cpp"
+	"src/Utility.cpp"
 	"src/JobSystem.cpp"
 	"src/Renderer.cpp"
 	"src/Shader.cpp"
 	"src/VertexBuffer.cpp"
 	"src/Texture.cpp"
+	"src/TextureArray.cpp"
 	"src/FreeCamera.cpp"
 	"vendor/glad/src/glad.c"
 	"vendor/stb_image/src/stb_image.cpp"
